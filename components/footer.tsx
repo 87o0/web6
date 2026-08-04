@@ -108,6 +108,3 @@ export function Footer() {
     </footer>
   );
 }
-
-
-export { Footer }
