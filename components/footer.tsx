@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { usePricing } from '@/components/pricing-context';
 
 type FooterLink = {
@@ -24,7 +25,7 @@ const groups: FooterGroup[] = [
   },
   {
     title: 'Company',
-    links: [{ label: 'About' }, { label: 'Contact', href: 'mailto:leadprime.support@gmail.com' }],
+    links: [{ label: 'About', href: '/about' }, { label: 'Contact', href: 'mailto:leadprime.support@gmail.com' }],
   },
 ];
 
@@ -78,12 +79,21 @@ export function Footer() {
                         {link.label}
                       </button>
                     ) : link.href ? (
-                      <a
-                        href={link.href}
-                        className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-                      >
-                        {link.label}
-                      </a>
+                      link.href.startsWith('/') ? (
+                        <Link
+                          href={link.href}
+                          className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                          {link.label}
+                        </Link>
+                      ) : (
+                        <a
+                          href={link.href}
+                          className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                          {link.label}
+                        </a>
+                      )
                     ) : (
                       <a
                         href="#"
