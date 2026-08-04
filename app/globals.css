@@ -76,6 +76,11 @@
 }
 
 @layer utilities {
+  .scroll-touch {
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
   .bg-grid {
     background-size: 56px 56px;
     background-image:

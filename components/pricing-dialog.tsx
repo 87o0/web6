@@ -11,12 +11,13 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { usePricing } from '@/components/pricing-context';
-import { useSubscription } from '@/components/subscription-context';
+import { useSubscription, PlanName } from '@/components/subscription-context';
+import { useGate } from '@/components/gate-context';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
 type Plan = {
-  name: string;
+  name: PlanName;
   price: string;
   limit: string;
   description: string;
@@ -63,23 +64,29 @@ const plans: Plan[] = [
 
 export function PricingDialog() {
   const { open, setOpen } = usePricing();
-  const { setSubscription } = useSubscription();
+  const { setSubscription, activePlan } = useSubscription();
+  const { requestPurchase } = useGate();
   const { toast } = useToast();
 
-  function handleChoosePlan() {
-    setSubscription();
-    toast({
-      title: 'Subscription activated',
-      description: 'Your plan is now active. Welcome to LeadPrime.',
-    });
-    setOpen(false);
-  }
+  const handleChoosePlan = React.useCallback(
+    (plan: Plan) => {
+      requestPurchase(() => {
+        setSubscription(plan.name);
+        toast({
+          title: 'Subscription activated',
+          description: `Your ${plan.name} plan is now active. Welcome to LeadPrime.`,
+        });
+        setOpen(false);
+      });
+    },
+    [requestPurchase, setSubscription, toast, setOpen],
+  );
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogPortal>
         <DialogOverlay />
-        <DialogContent className="max-w-5xl gap-0 overflow-hidden rounded-2xl border-border bg-background p-0 sm:rounded-2xl">
+        <DialogContent className="max-w-5xl max-h-[calc(100dvh-2rem)] gap-0 overflow-y-auto rounded-2xl border-border bg-background p-0 scroll-touch sm:rounded-2xl">
           <div className="sr-only">
             <DialogTitle>LeadPrime pricing plans</DialogTitle>
             <DialogDescription>
@@ -105,75 +112,89 @@ export function PricingDialog() {
           </div>
 
           <div className="grid gap-px bg-border sm:grid-cols-3">
-            {plans.map((plan) => (
-              <div
-                key={plan.name}
-                className={cn(
-                  'flex flex-col bg-background p-6 sm:p-7',
-                  plan.highlight && 'bg-emerald-50/30'
-                )}
-              >
-                <div className="flex items-center justify-between">
-                  <span
-                    className={cn(
-                      'inline-flex h-9 w-9 items-center justify-center rounded-lg border',
-                      plan.highlight
-                        ? 'border-emerald-300 bg-emerald-100 text-emerald-700'
-                        : 'border-border bg-secondary text-foreground'
-                    )}
-                  >
-                    <plan.icon className="h-4 w-4" />
-                  </span>
-                  {plan.highlight && (
-                    <span className="rounded-full bg-foreground px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-wide text-background">
-                      Most popular
-                    </span>
-                  )}
-                </div>
-
-                <h3 className="mt-5 font-display text-lg font-semibold tracking-tight text-foreground">
-                  {plan.name}
-                </h3>
-
-                <div className="mt-2 flex items-baseline gap-1">
-                  <span className="font-display text-3xl font-bold tracking-tight text-foreground">
-                    {plan.price}
-                  </span>
-                  <span className="text-sm font-medium text-muted-foreground">
-                    / mo
-                  </span>
-                </div>
-
-                <p className="mt-3 text-sm font-medium text-foreground/80">
-                  {plan.limit}
-                </p>
-
-                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                  {plan.description}
-                </p>
-
-                <div className="mt-4 flex items-start gap-2 rounded-lg border border-border bg-secondary/60 p-3">
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                  <p className="text-xs leading-relaxed text-foreground/80">
-                    {plan.audience}
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleChoosePlan}
+            {plans.map((plan) => {
+              const isActive = activePlan === plan.name;
+              return (
+                <div
+                  key={plan.name}
                   className={cn(
-                    'group mt-6 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                    plan.highlight
-                      ? 'bg-foreground text-background shadow-lg shadow-foreground/10 hover:opacity-90'
-                      : 'border border-border bg-background text-foreground hover:bg-secondary'
+                    'flex flex-col bg-background p-6 sm:p-7',
+                    plan.highlight && 'bg-emerald-50/30'
                   )}
                 >
-                  {plan.cta}
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                </button>
-              </div>
-            ))}
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={cn(
+                        'inline-flex h-9 w-9 items-center justify-center rounded-lg border',
+                        plan.highlight
+                          ? 'border-emerald-300 bg-emerald-100 text-emerald-700'
+                          : 'border-border bg-secondary text-foreground'
+                      )}
+                    >
+                      <plan.icon className="h-4 w-4" />
+                    </span>
+                    {plan.highlight && (
+                      <span className="rounded-full bg-foreground px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-wide text-background">
+                        Most popular
+                      </span>
+                    )}
+                  </div>
+
+                  <h3 className="mt-5 font-display text-lg font-semibold tracking-tight text-foreground">
+                    {plan.name}
+                  </h3>
+
+                  <div className="mt-2 flex items-baseline gap-1">
+                    <span className="font-display text-3xl font-bold tracking-tight text-foreground">
+                      {plan.price}
+                    </span>
+                    <span className="text-sm font-medium text-muted-foreground">
+                      / mo
+                    </span>
+                  </div>
+
+                  <p className="mt-3 text-sm font-medium text-foreground/80">
+                    {plan.limit}
+                  </p>
+
+                  <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                    {plan.description}
+                  </p>
+
+                  <div className="mt-4 flex items-start gap-2 rounded-lg border border-border bg-secondary/60 p-3">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                    <p className="text-xs leading-relaxed text-foreground/80">
+                      {plan.audience}
+                    </p>
+                  </div>
+
+                  {isActive ? (
+                    <button
+                      type="button"
+                      disabled
+                      className="mt-6 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full text-sm font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-300 bg-emerald-50"
+                    >
+                      <Check className="h-4 w-4" />
+                      Active
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleChoosePlan(plan)}
+                      className={cn(
+                        'group mt-6 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                        plan.highlight
+                          ? 'bg-foreground text-background shadow-lg shadow-foreground/10 hover:opacity-90'
+                          : 'border border-border bg-background text-foreground hover:bg-secondary'
+                      )}
+                    >
+                      {plan.cta}
+                      <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           <div className="border-t border-border bg-secondary/40 px-6 py-4 text-center sm:px-8">

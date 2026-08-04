@@ -1,30 +1,25 @@
 'use client';
 
-import { ArrowRight, Calendar, Sparkles, Lock } from 'lucide-react';
+import { ArrowRight, Calendar, Sparkles } from 'lucide-react';
 import { Reveal } from '@/components/reveal';
 import { usePricing } from '@/components/pricing-context';
 import { useTrial } from '@/components/trial-context';
 import { useSubscription } from '@/components/subscription-context';
-import { useAuth } from '@/lib/auth-context';
 import { useBooking } from '@/components/booking-context';
-import { useGate, CAL_URL } from '@/components/gate-context';
+import { CAL_URL } from '@/components/gate-context';
 
 export function Hero() {
   const { setOpen: setPricingOpen } = usePricing();
   const { setOpen: setTrialOpen } = useTrial();
   const { hasActivePlan } = useSubscription();
-  const { status } = useAuth();
   const { booked, setBooked } = useBooking();
-  const { requestPurchase } = useGate();
-
-  const canPurchase = status === 'authenticated' && booked;
 
   function handleBuySubscription() {
-    requestPurchase(() => setPricingOpen(true));
+    setPricingOpen(true);
   }
 
   function handleBuyTrial() {
-    requestPurchase(() => setTrialOpen(true));
+    setTrialOpen(true);
   }
 
   function handleBookCall() {
@@ -151,17 +146,8 @@ export function Hero() {
             onClick={handleBuySubscription}
             className="group inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-7 text-sm font-semibold text-background shadow-lg shadow-foreground/10 transition-all hover:opacity-90 hover:shadow-xl hover:shadow-foreground/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:w-auto"
           >
-            {canPurchase ? (
-              <>
-                Buy subscription
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </>
-            ) : (
-              <>
-                <Lock className="h-4 w-4" />
-                Buy subscription
-              </>
-            )}
+            Buy subscription
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </button>
           <a
             href={CAL_URL}
@@ -178,29 +164,25 @@ export function Hero() {
             onClick={handleBuyTrial}
             className="group inline-flex h-12 w-full items-center justify-center gap-2 rounded-full px-7 text-sm font-semibold text-foreground transition-colors hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:w-auto"
           >
-            {canPurchase ? (
-              <>
-                Buy paid trial
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </>
-            ) : (
-              <>
-                <Lock className="h-4 w-4" />
-                Buy paid trial
-              </>
-            )}
+            Buy paid trial
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </button>
         </Reveal>
 
-        {!canPurchase && (
+        {!booked && (
           <Reveal delay={320}>
-            <p className="mt-4 text-xs text-muted-foreground">
-              {status !== 'authenticated'
-                ? 'Sign in required to purchase'
-                : !booked
-                  ? 'Book a call to unlock purchase'
-                  : ''}
-            </p>
+            <div className="mt-4 flex flex-col items-center gap-2">
+              <p className="text-xs text-muted-foreground">
+                Already spoken with our team?
+              </p>
+              <button
+                type="button"
+                onClick={handleBookCall}
+                className="text-xs font-medium text-foreground underline-offset-4 hover:underline"
+              >
+                Skip — no thanks
+              </button>
+            </div>
           </Reveal>
         )}
       </div>

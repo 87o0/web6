@@ -12,11 +12,12 @@ import {
 } from '@/components/ui/dialog';
 import { useTrial } from '@/components/trial-context';
 import { useSubscription } from '@/components/subscription-context';
+import { useGate } from '@/components/gate-context';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
 const trialFeatures = [
-  '14-day full platform access',
+  '7-day full platform access',
   'Up to 500 qualified leads',
   'AI script training included',
   'CRM integrations',
@@ -27,6 +28,7 @@ const trialFeatures = [
 export function TrialDialog() {
   const { open, setOpen } = useTrial();
   const { setTrial } = useSubscription();
+  const { requestPurchase } = useGate();
   const { toast } = useToast();
   const [selected, setSelected] = React.useState(false);
 
@@ -41,11 +43,11 @@ export function TrialDialog() {
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogPortal>
         <DialogOverlay />
-        <DialogContent className="max-w-md gap-0 overflow-hidden rounded-2xl border-border bg-background p-0 sm:rounded-2xl">
+        <DialogContent className="max-w-md max-h-[calc(100dvh-2rem)] gap-0 overflow-y-auto rounded-2xl border-border bg-background p-0 scroll-touch sm:rounded-2xl">
           <div className="sr-only">
             <DialogTitle>Paid trial — $29.00</DialogTitle>
             <DialogDescription>
-              Purchase a 14-day paid trial of LeadPrime for $29.00.
+              Purchase a 7-day paid trial of LeadPrime for $29.00.
             </DialogDescription>
           </div>
 
@@ -59,7 +61,7 @@ export function TrialDialog() {
                   Paid Trial
                 </h2>
                 <p className="text-xs text-muted-foreground">
-                  Try the full platform for 14 days
+                  Try the full platform for 7 days
                 </p>
               </div>
             </div>
@@ -75,7 +77,7 @@ export function TrialDialog() {
               </span>
             </div>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Get full access to LeadPrime for 14 days. Experience the entire
+              Get full access to LeadPrime for 7 days. Experience the entire
               pipeline — from lead discovery to closed-won — without committing
               to a monthly plan.
             </p>
@@ -95,7 +97,7 @@ export function TrialDialog() {
             <div className="mt-5 flex items-start gap-2 rounded-lg border border-border bg-secondary/60 p-3">
               <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
               <p className="text-xs leading-relaxed text-foreground/80">
-                Trial starts the moment you purchase. At the end of 14 days,
+                Trial starts the moment you purchase. At the end of 7 days,
                 choose any subscription plan or walk away — no auto-renewal.
               </p>
             </div>
@@ -104,13 +106,15 @@ export function TrialDialog() {
               type="button"
               onClick={() => {
                 if (selected) {
-                  setTrial();
-                  toast({
-                    title: 'Paid trial activated',
-                    description: 'Your 7-day trial is now active. Enjoy LeadPrime!',
+                  requestPurchase(() => {
+                    setTrial();
+                    toast({
+                      title: 'Paid trial activated',
+                      description: 'Your 7-day trial is now active. Enjoy LeadPrime!',
+                    });
+                    setOpen(false);
+                    setTimeout(() => setSelected(false), 200);
                   });
-                  setOpen(false);
-                  setTimeout(() => setSelected(false), 200);
                 } else {
                   setSelected(true);
                 }

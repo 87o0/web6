@@ -1,7 +1,6 @@
 'use client';
 
 import { usePricing } from '@/components/pricing-context';
-import { useGate } from '@/components/gate-context';
 
 type FooterLink = {
   label: string;
@@ -37,7 +36,6 @@ function scrollToSection(id: string) {
 
 export function Footer() {
   const { setOpen: setPricingOpen } = usePricing();
-  const { requestPurchase } = useGate();
 
   return (
     <footer className="border-t border-border px-5 py-14 sm:px-6 lg:px-8">
@@ -73,7 +71,7 @@ export function Footer() {
                     ) : link.action === 'pricing' ? (
                       <button
                         type="button"
-                        onClick={() => requestPurchase(() => setPricingOpen(true))}
+                        onClick={() => setPricingOpen(true)}
                         className="text-sm text-muted-foreground transition-colors hover:text-foreground"
                       >
                         {link.label}

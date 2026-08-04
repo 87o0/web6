@@ -4,10 +4,15 @@ import * as React from 'react';
 
 type SubscriptionStatus = 'none' | 'subscription' | 'trial';
 
+type PlanName = 'Starter' | 'Pro' | 'Enterprise';
+
+export type { PlanName };
+
 type SubscriptionContextValue = {
   status: SubscriptionStatus;
   hasActivePlan: boolean;
-  setSubscription: () => void;
+  activePlan: PlanName | null;
+  setSubscription: (plan?: PlanName) => void;
   setTrial: () => void;
   clear: () => void;
 };
@@ -15,6 +20,7 @@ type SubscriptionContextValue = {
 const SubscriptionContext = React.createContext<SubscriptionContextValue | null>(null);
 
 const STORAGE_KEY = 'leadprime:subscription';
+const PLAN_KEY = 'leadprime:plan';
 
 function readStoredStatus(): SubscriptionStatus {
   if (typeof window === 'undefined') return 'none';
@@ -27,37 +33,61 @@ function readStoredStatus(): SubscriptionStatus {
   }
 }
 
+function readStoredPlan(): PlanName | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(PLAN_KEY);
+    if (raw === 'Starter' || raw === 'Pro' || raw === 'Enterprise') return raw;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = React.useState<SubscriptionStatus>('none');
+  const [activePlan, setActivePlan] = React.useState<PlanName | null>(null);
   const [hydrated, setHydrated] = React.useState(false);
 
   React.useEffect(() => {
     setStatus(readStoredStatus());
+    setActivePlan(readStoredPlan());
     setHydrated(true);
   }, []);
 
-  const persist = React.useCallback((next: SubscriptionStatus) => {
-    try {
-      if (next === 'none') {
-        window.localStorage.removeItem(STORAGE_KEY);
-      } else {
-        window.localStorage.setItem(STORAGE_KEY, next);
+  const persist = React.useCallback(
+    (next: SubscriptionStatus, plan?: PlanName | null) => {
+      try {
+        if (next === 'none') {
+          window.localStorage.removeItem(STORAGE_KEY);
+          window.localStorage.removeItem(PLAN_KEY);
+        } else {
+          window.localStorage.setItem(STORAGE_KEY, next);
+          if (plan) {
+            window.localStorage.setItem(PLAN_KEY, plan);
+          } else {
+            window.localStorage.removeItem(PLAN_KEY);
+          }
+        }
+      } catch {
+        /* ignore persistence failures */
       }
-    } catch {
-      /* ignore persistence failures */
-    }
-    setStatus(next);
-  }, []);
+      setStatus(next);
+      setActivePlan(plan ?? null);
+    },
+    [],
+  );
 
   const value = React.useMemo<SubscriptionContextValue>(
     () => ({
       status: hydrated ? status : 'none',
       hasActivePlan: hydrated && status !== 'none',
-      setSubscription: () => persist('subscription'),
-      setTrial: () => persist('trial'),
-      clear: () => persist('none'),
+      activePlan: hydrated ? activePlan : null,
+      setSubscription: (plan?: PlanName) => persist('subscription', plan ?? null),
+      setTrial: () => persist('trial', null),
+      clear: () => persist('none', null),
     }),
-    [status, hydrated, persist],
+    [status, activePlan, hydrated, persist],
   );
 
   return (
