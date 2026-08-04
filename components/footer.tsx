@@ -6,6 +6,7 @@ type FooterLink = {
   label: string;
   target?: string;
   action?: 'pricing';
+  href?: string;
 };
 
 type FooterGroup = {
@@ -23,7 +24,7 @@ const groups: FooterGroup[] = [
   },
   {
     title: 'Company',
-    links: [{ label: 'About' }, { label: 'Contact' }],
+    links: [{ label: 'About' }, { label: 'Contact', href: 'mailto:leadprime.support@gmail.com' }],
   },
 ];
 
@@ -76,6 +77,13 @@ export function Footer() {
                       >
                         {link.label}
                       </button>
+                    ) : link.href ? (
+                      <a
+                        href={link.href}
+                        className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                      >
+                        {link.label}
+                      </a>
                     ) : (
                       <a
                         href="#"
@@ -100,3 +108,6 @@ export function Footer() {
     </footer>
   );
 }
+
+
+export { Footer }
