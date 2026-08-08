@@ -3,20 +3,15 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
+import { useAuthDialog } from '@/components/auth-dialog-context';
 import { useSubscription } from '@/components/subscription-context';
 import { useBooking } from '@/components/booking-context';
 import { cn } from '@/lib/utils';
 
-const DEMO_USER = {
-  name: 'Alex Morgan',
-  email: 'alex.morgan@leadprime.app',
-  image:
-    'https://lh3.googleusercontent.com/a/ACg8ocLJ7Y9fZ3kJnJKqGRzMpZvKqRBzQq9kO7t0m9LJhYxQ=s96-c',
-};
-
 export function Navbar() {
   const [scrolled, setScrolled] = React.useState(false);
-  const { session, status, signIn, signOut } = useAuth();
+  const { session, status, signOut } = useAuth();
+  const { openAuth } = useAuthDialog();
   const { hasActivePlan, clear: clearSubscription } = useSubscription();
   const { clear: clearBooking } = useBooking();
 
@@ -77,14 +72,14 @@ export function Navbar() {
             <>
               <button
                 type="button"
-                onClick={() => signIn(DEMO_USER)}
+                onClick={() => openAuth('signin')}
                 className="inline-flex h-9 items-center rounded-full px-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
               >
                 Sign in
               </button>
               <button
                 type="button"
-                onClick={() => signIn(DEMO_USER)}
+                onClick={() => openAuth('signup')}
                 className="inline-flex h-9 items-center rounded-full bg-foreground px-5 text-sm font-semibold text-background shadow-sm transition-all hover:opacity-90 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 Sign up

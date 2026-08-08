@@ -193,7 +193,7 @@ export default function MediaCatalogPage() {
                 Media Catalog
               </h1>
               <p className="text-xs text-muted-foreground">
-                {status === 'authenticated' ? user?.name : 'Guest'} · Manage your assets
+                {status === 'authenticated' ? user?.name : 'Not signed in'} · Manage your assets
               </p>
             </div>
           </div>

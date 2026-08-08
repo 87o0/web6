@@ -2,14 +2,14 @@
 
 import * as React from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { useBooking } from '@/components/booking-context';
+import { useAuthDialog } from '@/components/auth-dialog-context';
 
 type GateStage = 'closed' | 'auth';
 
 type GateContextValue = {
   stage: GateStage;
   pendingAction: (() => void) | null;
-  /** Gate a specific plan-selection action. Auth required; booking is optional. */
+  /** Gate a specific plan-selection action. Auth required. */
   requestPurchase: (action: () => void) => void;
   close: () => void;
   resolveAuth: () => void;
@@ -17,17 +17,11 @@ type GateContextValue = {
 
 const GateContext = React.createContext<GateContextValue | null>(null);
 
-const DEMO_USER = {
-  name: 'Alex Morgan',
-  email: 'alex.morgan@leadprime.app',
-  image:
-    'https://lh3.googleusercontent.com/a/ACg8ocLJ7Y9fZ3kJnJKqGRzMpZvKqRBzQq9kO7t0m9LJhYxQ=s96-c',
-};
-
 export const CAL_URL = 'https://cal.com/leadprime/consultation-15-30-min';
 
 export function GateProvider({ children }: { children: React.ReactNode }) {
-  const { status, signIn } = useAuth();
+  const { status } = useAuth();
+  const { openAuth } = useAuthDialog();
   const [stage, setStage] = React.useState<GateStage>('closed');
   const [pendingAction, setPendingAction] = React.useState<(() => void) | null>(null);
 
@@ -36,11 +30,12 @@ export function GateProvider({ children }: { children: React.ReactNode }) {
       if (status !== 'authenticated') {
         setPendingAction(() => action);
         setStage('auth');
+        openAuth('signup');
         return;
       }
       action();
     },
-    [status],
+    [status, openAuth],
   );
 
   const close = React.useCallback(() => {
@@ -49,15 +44,12 @@ export function GateProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const resolveAuth = React.useCallback(() => {
-    if (status !== 'authenticated') {
-      signIn(DEMO_USER);
-    }
     setStage('closed');
     if (pendingAction) {
       pendingAction();
       setPendingAction(null);
     }
-  }, [status, signIn, pendingAction]);
+  }, [pendingAction]);
 
   const value = React.useMemo<GateContextValue>(
     () => ({

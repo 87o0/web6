@@ -26,41 +26,37 @@ import {
 
 type Metric = {
   label: string;
-  value: string;
+  value: number;
   delta: string;
   trend: 'up' | 'down' | 'flat';
   icon: React.ComponentType<{ className?: string }>;
   accent?: boolean;
 };
 
-const SUMMARY_METRICS: Metric[] = [
+const METRIC_CONFIG: Omit<Metric, 'value'>[] = [
   {
     label: 'Total leads found',
-    value: '4,218',
-    delta: '+12.4% this week',
-    trend: 'up',
+    delta: 'Awaiting data',
+    trend: 'flat',
     icon: Users,
   },
   {
     label: 'Category A leads',
-    value: '1,372',
-    delta: 'Score 8–10 · 32.5%',
-    trend: 'up',
+    delta: 'Score 8–10',
+    trend: 'flat',
     icon: TrendingUp,
     accent: true,
   },
   {
     label: 'Category B leads',
-    value: '1,886',
-    delta: 'Score 5–7 · 44.7%',
+    delta: 'Score 5–7',
     trend: 'flat',
     icon: Gauge,
   },
   {
     label: 'Total touches spent',
-    value: '11,604',
-    delta: '−3.1% this week',
-    trend: 'down',
+    delta: 'Awaiting data',
+    trend: 'flat',
     icon: Activity,
   },
 ];
@@ -75,100 +71,12 @@ type LiveEvent = {
   time: string;
 };
 
-const INITIAL_EVENTS: LiveEvent[] = [
-  {
-    id: 'evt_001',
-    company: 'Northwind Robotics',
-    channel: 'LinkedIn',
-    score: 9,
-    category: 'A',
-    status: 'Qualifying',
-    time: 'just now',
-  },
-  {
-    id: 'evt_002',
-    company: 'Helio Energy',
-    channel: 'Web form',
-    score: 6,
-    category: 'B',
-    status: 'Enriching',
-    time: '38s ago',
-  },
-  {
-    id: 'evt_003',
-    company: 'Cascade Logistics',
-    channel: 'Email reply',
-    score: 8,
-    category: 'A',
-    status: 'Scoring',
-    time: '1m ago',
-  },
-  {
-    id: 'evt_004',
-    company: 'Vector Bio',
-    channel: 'LinkedIn',
-    score: 7,
-    category: 'B',
-    status: 'Qualifying',
-    time: '2m ago',
-  },
-  {
-    id: 'evt_005',
-    company: 'Atlas Freight',
-    channel: 'Web form',
-    score: 10,
-    category: 'A',
-    status: 'Routing',
-    time: '3m ago',
-  },
-];
-
-const COMPANY_POOL = [
-  'Northwind Robotics',
-  'Helio Energy',
-  'Cascade Logistics',
-  'Vector Bio',
-  'Atlas Freight',
-  'Quanta Systems',
-  'Beacon Health',
-  'Orbital Drift',
-  'Summit Foods',
-  'Lumen AI',
-];
-const CHANNEL_POOL = ['LinkedIn', 'Web form', 'Email reply', 'Referral'];
-const STATUSES = ['Enriching', 'Scoring', 'Qualifying', 'Routing'];
-
-function randomEvent(counter: number): LiveEvent {
-  const company = COMPANY_POOL[Math.floor(Math.random() * COMPANY_POOL.length)];
-  const channel = CHANNEL_POOL[Math.floor(Math.random() * CHANNEL_POOL.length)];
-  const score = 5 + Math.floor(Math.random() * 6);
-  const status = STATUSES[Math.floor(Math.random() * STATUSES.length)];
-  return {
-    id: `evt_live_${counter}`,
-    company,
-    channel,
-    score,
-    category: score >= 8 ? 'A' : 'B',
-    status,
-    time: 'just now',
-  };
-}
-
 export default function DashboardPage() {
   const { session, status } = useAuth();
-  const [events, setEvents] = React.useState<LiveEvent[]>(INITIAL_EVENTS);
 
-  React.useEffect(() => {
-    let counter = 100;
-    const interval = setInterval(() => {
-      counter += 1;
-      setEvents((prev) => {
-        const aged = prev.map((e) => ({ ...e, time: ageLabel(e.time) }));
-        return [randomEvent(counter), ...aged].slice(0, 8);
-      });
-    }, 4500);
-    return () => clearInterval(interval);
-  }, []);
+  const metrics: Metric[] = METRIC_CONFIG.map((m) => ({ ...m, value: 0 }));
+
+  const [events, setEvents] = React.useState<LiveEvent[]>([]);
 
   const activeNow = events.length;
   const activeCategoryA = events.filter((e) => e.category === 'A').length;
@@ -193,7 +101,7 @@ export default function DashboardPage() {
       <div className="relative mx-auto max-w-6xl px-5 pb-20 pt-8 sm:px-6 lg:px-8">
         <Header
           status={status}
-          userName={user?.name ?? 'Guest'}
+          userName={user?.name ?? 'Not signed in'}
           userEmail={user?.email ?? ''}
           userImage={user?.image}
           initials={initials}
@@ -211,7 +119,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <SummaryCards metrics={SUMMARY_METRICS} />
+          <SummaryCards metrics={metrics} />
           <LiveActivityFeed
             events={events}
             activeNow={activeNow}
@@ -321,7 +229,7 @@ function MetricCard({ metric }: { metric: Metric }) {
       </CardHeader>
       <CardContent>
         <div className="font-display text-3xl font-bold tracking-tight text-foreground">
-          {value}
+          {value.toLocaleString()}
         </div>
         <div className="mt-2 flex items-center gap-1.5 text-xs">
           <span
@@ -385,11 +293,26 @@ function LiveActivityFeed({
           real-time.
         </p>
 
-        <div className="mt-1 divide-y divide-border/70 overflow-hidden rounded-lg border border-border/60">
-          {events.map((e) => (
-            <ActivityRow key={e.id} event={e} />
-          ))}
-        </div>
+        {events.length === 0 ? (
+          <div className="mt-1 flex flex-col items-center justify-center rounded-lg border border-dashed border-border/60 py-16 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary text-muted-foreground">
+              <Activity className="h-6 w-6" />
+            </div>
+            <p className="mt-3 text-sm font-medium text-foreground">
+              No activity yet
+            </p>
+            <p className="mt-1 max-w-sm text-xs text-muted-foreground">
+              Live lead events will appear here as your qualification agents
+              process incoming leads.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-1 divide-y divide-border/70 overflow-hidden rounded-lg border border-border/60">
+            {events.map((e) => (
+              <ActivityRow key={e.id} event={e} />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
@@ -436,17 +359,4 @@ function ActivityRow({ event }: { event: LiveEvent }) {
       </span>
     </div>
   );
-}
-
-function ageLabel(time: string): string {
-  if (time === 'just now') return '30s ago';
-  const match = time.match(/(\d+)([sm]) ago/);
-  if (!match) return time;
-  const n = parseInt(match[1], 10);
-  const unit = match[2];
-  if (unit === 's') {
-    const next = n + 15;
-    return next >= 60 ? '1m ago' : `${next}s ago`;
-  }
-  return `${n + 1}m ago`;
 }
